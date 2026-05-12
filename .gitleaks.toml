@@ -1,0 +1,26 @@
+[extend]
+useDefault = true
+
+[[rules]]
+description = "Supabase service_role key"
+id = "supabase-service-role"
+regex = '''eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.[A-Za-z0-9+/=]+\.[A-Za-z0-9+/=_-]+'''
+tags = ["supabase", "jwt"]
+
+[[rules]]
+description = "TMDB API Key"
+id = "tmdb-api-key"
+regex = '''(?i)(tmdb[_-]?(api[_-]?)?key|TMDB[_-]?(API[_-]?)?KEY)\s*[=:]\s*['"]?[A-Za-z0-9]{32,}['"]?'''
+tags = ["tmdb"]
+
+[[rules]]
+description = "RapidAPI Key"
+id = "rapidapi-key"
+regex = '''(?i)(rapid[_-]?api[_-]?key|X-RapidAPI-Key)\s*[=:]\s*['"]?[A-Za-z0-9]{32,}['"]?'''
+tags = ["rapidapi"]
+
+[allowlist]
+paths = [
+  ".env.example",
+  "tests/",
+]

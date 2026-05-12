@@ -1,146 +1,391 @@
-// Gerado via: npx supabase gen types typescript --local > src/types/database.ts
-// Não editar manualmente — rodar o comando acima após cada migration
+// Gerado via: npx supabase gen types typescript --project-id <id> > src/types/database.ts
+// Não editar manualmente — execute o comando acima após cada migration aplicada em produção.
+// Formato compatível com @supabase/supabase-js v2.
 
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
-export interface Database {
+export type Database = {
   public: {
     Tables: {
-      movies: {
+      genres: {
         Row: {
-          id: string
+          name_pt: string
           tmdb_id: number
-          imdb_id: string
-          title_pt: string
-          title_original: string
-          original_language: string
-          overview_pt: string | null
-          release_date: string | null
-          runtime: number | null
-          poster_url: string | null
-          backdrop_url: string | null
-          genres: number[]
-          last_synced_at: string
         }
-        Insert: Omit<Database['public']['Tables']['movies']['Row'], 'id'>
-        Update: Partial<Database['public']['Tables']['movies']['Insert']>
-      }
-      people: {
-        Row: {
-          id: string
+        Insert: {
+          name_pt: string
           tmdb_id: number
-          name: string
-          profile_url: string | null
-          known_for: string | null
         }
-        Insert: Omit<Database['public']['Tables']['people']['Row'], 'id'>
-        Update: Partial<Database['public']['Tables']['people']['Insert']>
+        Update: {
+          name_pt?: string
+          tmdb_id?: number
+        }
+        Relationships: []
       }
       movie_cast: {
         Row: {
-          movie_id: string
-          person_id: string
           character: string | null
+          movie_id: string
           order: number
+          person_id: string
         }
-        Insert: Database['public']['Tables']['movie_cast']['Row']
-        Update: Partial<Database['public']['Tables']['movie_cast']['Insert']>
+        Insert: {
+          character?: string | null
+          movie_id: string
+          order?: number
+          person_id: string
+        }
+        Update: {
+          character?: string | null
+          movie_id?: string
+          order?: number
+          person_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'movie_cast_movie_id_fkey'
+            columns: ['movie_id']
+            isOneToOne: false
+            referencedRelation: 'movies'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'movie_cast_person_id_fkey'
+            columns: ['person_id']
+            isOneToOne: false
+            referencedRelation: 'people'
+            referencedColumns: ['id']
+          },
+        ]
       }
       movie_crew: {
         Row: {
+          job: string
           movie_id: string
           person_id: string
-          job: string
         }
-        Insert: Database['public']['Tables']['movie_crew']['Row']
-        Update: Partial<Database['public']['Tables']['movie_crew']['Insert']>
+        Insert: {
+          job: string
+          movie_id: string
+          person_id: string
+        }
+        Update: {
+          job?: string
+          movie_id?: string
+          person_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'movie_crew_movie_id_fkey'
+            columns: ['movie_id']
+            isOneToOne: false
+            referencedRelation: 'movies'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'movie_crew_person_id_fkey'
+            columns: ['person_id']
+            isOneToOne: false
+            referencedRelation: 'people'
+            referencedColumns: ['id']
+          },
+        ]
       }
       movie_ratings: {
         Row: {
+          fetched_at: string
           id: string
           movie_id: string
-          source: 'imdb' | 'rotten_tomatoes' | 'letterboxd'
           score: number
           score_max: number
-          votes: number | null
+          source: Database['public']['Enums']['rating_source']
           url: string | null
-          fetched_at: string
+          votes: number | null
         }
-        Insert: Omit<Database['public']['Tables']['movie_ratings']['Row'], 'id'>
-        Update: Partial<Database['public']['Tables']['movie_ratings']['Insert']>
+        Insert: {
+          fetched_at?: string
+          id?: string
+          movie_id: string
+          score: number
+          score_max: number
+          source: Database['public']['Enums']['rating_source']
+          url?: string | null
+          votes?: number | null
+        }
+        Update: {
+          fetched_at?: string
+          id?: string
+          movie_id?: string
+          score?: number
+          score_max?: number
+          source?: Database['public']['Enums']['rating_source']
+          url?: string | null
+          votes?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'movie_ratings_movie_id_fkey'
+            columns: ['movie_id']
+            isOneToOne: false
+            referencedRelation: 'movies'
+            referencedColumns: ['id']
+          },
+        ]
       }
       movie_streaming: {
         Row: {
           id: string
-          movie_id: string
-          provider_name: string
-          provider_logo_url: string
-          type: 'flatrate' | 'rent' | 'buy' | 'ads'
-          region: string
           link: string | null
+          movie_id: string
+          provider_logo_url: string
+          provider_name: string
+          region: string
+          type: Database['public']['Enums']['streaming_type']
         }
-        Insert: Omit<Database['public']['Tables']['movie_streaming']['Row'], 'id'>
-        Update: Partial<Database['public']['Tables']['movie_streaming']['Insert']>
+        Insert: {
+          id?: string
+          link?: string | null
+          movie_id: string
+          provider_logo_url: string
+          provider_name: string
+          region?: string
+          type: Database['public']['Enums']['streaming_type']
+        }
+        Update: {
+          id?: string
+          link?: string | null
+          movie_id?: string
+          provider_logo_url?: string
+          provider_name?: string
+          region?: string
+          type?: Database['public']['Enums']['streaming_type']
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'movie_streaming_movie_id_fkey'
+            columns: ['movie_id']
+            isOneToOne: false
+            referencedRelation: 'movies'
+            referencedColumns: ['id']
+          },
+        ]
       }
-      genres: {
+      movies: {
         Row: {
+          backdrop_url: string | null
+          genres: number[]
+          id: string
+          imdb_id: string
+          last_synced_at: string
+          original_language: string
+          overview_pt: string | null
+          poster_url: string | null
+          release_date: string | null
+          runtime: number | null
+          title_original: string
+          title_pt: string
           tmdb_id: number
-          name_pt: string
         }
-        Insert: Database['public']['Tables']['genres']['Row']
-        Update: Partial<Database['public']['Tables']['genres']['Insert']>
-      }
-      user_favorites: {
-        Row: {
-          user_id: string
-          movie_id: string
-          created_at: string
+        Insert: {
+          backdrop_url?: string | null
+          genres?: number[]
+          id?: string
+          imdb_id: string
+          last_synced_at?: string
+          original_language?: string
+          overview_pt?: string | null
+          poster_url?: string | null
+          release_date?: string | null
+          runtime?: number | null
+          title_original: string
+          title_pt: string
+          tmdb_id: number
         }
-        Insert: Omit<Database['public']['Tables']['user_favorites']['Row'], 'created_at'>
-        Update: Partial<Database['public']['Tables']['user_favorites']['Insert']>
-      }
-      user_watchlist: {
-        Row: {
-          user_id: string
-          movie_id: string
-          created_at: string
-          watched: boolean
+        Update: {
+          backdrop_url?: string | null
+          genres?: number[]
+          id?: string
+          imdb_id?: string
+          last_synced_at?: string
+          original_language?: string
+          overview_pt?: string | null
+          poster_url?: string | null
+          release_date?: string | null
+          runtime?: number | null
+          title_original?: string
+          title_pt?: string
+          tmdb_id?: number
         }
-        Insert: Omit<Database['public']['Tables']['user_watchlist']['Row'], 'created_at'>
-        Update: Partial<Database['public']['Tables']['user_watchlist']['Insert']>
+        Relationships: []
       }
-      sync_logs: {
+      people: {
         Row: {
           id: string
-          function_name: string
-          status: 'started' | 'success' | 'error'
-          started_at: string
-          finished_at: string | null
-          error_message: string | null
-          items_processed: number | null
+          known_for: string | null
+          name: string
+          profile_url: string | null
+          tmdb_id: number
         }
-        Insert: Omit<Database['public']['Tables']['sync_logs']['Row'], 'id'>
-        Update: Partial<Database['public']['Tables']['sync_logs']['Insert']>
+        Insert: {
+          id?: string
+          known_for?: string | null
+          name: string
+          profile_url?: string | null
+          tmdb_id: number
+        }
+        Update: {
+          id?: string
+          known_for?: string | null
+          name?: string
+          profile_url?: string | null
+          tmdb_id?: number
+        }
+        Relationships: []
       }
       rate_limits: {
         Row: {
-          key: string
           count: number
+          key: string
           window_start: string
         }
-        Insert: Database['public']['Tables']['rate_limits']['Row']
-        Update: Partial<Database['public']['Tables']['rate_limits']['Insert']>
+        Insert: {
+          count?: number
+          key: string
+          window_start?: string
+        }
+        Update: {
+          count?: number
+          key?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
+      sync_logs: {
+        Row: {
+          error_message: string | null
+          finished_at: string | null
+          function_name: string
+          id: string
+          items_processed: number | null
+          started_at: string
+          status: Database['public']['Enums']['sync_status']
+        }
+        Insert: {
+          error_message?: string | null
+          finished_at?: string | null
+          function_name: string
+          id?: string
+          items_processed?: number | null
+          started_at?: string
+          status: Database['public']['Enums']['sync_status']
+        }
+        Update: {
+          error_message?: string | null
+          finished_at?: string | null
+          function_name?: string
+          id?: string
+          items_processed?: number | null
+          started_at?: string
+          status?: Database['public']['Enums']['sync_status']
+        }
+        Relationships: []
+      }
+      user_favorites: {
+        Row: {
+          created_at: string
+          movie_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          movie_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          movie_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'user_favorites_movie_id_fkey'
+            columns: ['movie_id']
+            isOneToOne: false
+            referencedRelation: 'movies'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'user_favorites_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      user_watchlist: {
+        Row: {
+          created_at: string
+          movie_id: string
+          user_id: string
+          watched: boolean
+        }
+        Insert: {
+          created_at?: string
+          movie_id: string
+          user_id: string
+          watched?: boolean
+        }
+        Update: {
+          created_at?: string
+          movie_id?: string
+          user_id?: string
+          watched?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'user_watchlist_movie_id_fkey'
+            columns: ['movie_id']
+            isOneToOne: false
+            referencedRelation: 'movies'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'user_watchlist_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
       }
     }
     Views: Record<string, never>
     Functions: {
-      search_movies: {
-        Args: { query: string; genre_ids?: number[]; limit_n?: number; offset_n?: number }
-        Returns: Database['public']['Tables']['movies']['Row'][]
-      }
       check_rate_limit: {
-        Args: { p_key: string; p_max_requests: number; p_window_seconds: number }
+        Args: {
+          p_key: string
+          p_max_requests: number
+          p_window_seconds: number
+        }
         Returns: boolean
+      }
+      cleanup_rate_limits: {
+        Args: Record<string, never>
+        Returns: undefined
+      }
+      cleanup_sync_logs: {
+        Args: Record<string, never>
+        Returns: undefined
+      }
+      search_movies: {
+        Args: {
+          p_query: string
+          p_genre_ids?: number[]
+          p_limit?: number
+          p_offset?: number
+        }
+        Returns: Database['public']['Tables']['movies']['Row'][]
       }
     }
     Enums: {
@@ -148,5 +393,37 @@ export interface Database {
       streaming_type: 'flatrate' | 'rent' | 'buy' | 'ads'
       sync_status: 'started' | 'success' | 'error'
     }
+    CompositeTypes: Record<string, never>
   }
 }
+
+// ─── Helpers (padrão Supabase) ────────────────────────────────────────────────
+
+type PublicSchema = Database['public']
+
+export type Tables<T extends keyof PublicSchema['Tables']> =
+  PublicSchema['Tables'][T]['Row']
+
+export type TablesInsert<T extends keyof PublicSchema['Tables']> =
+  PublicSchema['Tables'][T]['Insert']
+
+export type TablesUpdate<T extends keyof PublicSchema['Tables']> =
+  PublicSchema['Tables'][T]['Update']
+
+export type Enums<T extends keyof PublicSchema['Enums']> = PublicSchema['Enums'][T]
+
+// Aliases úteis
+export type Movie = Tables<'movies'>
+export type MovieInsert = TablesInsert<'movies'>
+export type Person = Tables<'people'>
+export type PersonInsert = TablesInsert<'people'>
+export type MovieRating = Tables<'movie_ratings'>
+export type MovieRatingInsert = TablesInsert<'movie_ratings'>
+export type MovieStreaming = Tables<'movie_streaming'>
+export type MovieStreamingInsert = TablesInsert<'movie_streaming'>
+export type Genre = Tables<'genres'>
+export type UserFavorite = Tables<'user_favorites'>
+export type UserWatchlistItem = Tables<'user_watchlist'>
+export type SyncLog = Tables<'sync_logs'>
+export type RatingSource = Enums<'rating_source'>
+export type StreamingType = Enums<'streaming_type'>

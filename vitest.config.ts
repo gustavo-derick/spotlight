@@ -5,7 +5,8 @@ import path from 'path'
 export default defineConfig({
   plugins: [react()],
   test: {
-    environment: 'jsdom',
+    // Padrão node; testes de componente usam @vitest-environment jsdom inline
+    environment: 'node',
     globals: true,
     coverage: {
       provider: 'v8',

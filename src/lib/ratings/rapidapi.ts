@@ -1,55 +1,169 @@
-// Implementação concreta do RatingsProvider usando RapidAPI.
-//
-// AGUARDANDO: curl completo da API do RapidAPI para implementar getRatings().
-// A interface e os tipos já estão prontos — basta preencher a lógica abaixo
-// após o curl ser fornecido.
-//
-// O método getRatings(imdbId) deve:
-//   1. Chamar a RapidAPI passando o imdbId como chave de consulta
-//   2. Mapear a resposta para RatingsResponse (array de RatingResult)
-//   3. Lançar RatingsError tipado em caso de 404, 429, ou erro de upstream
-//
-// Exemplo de uso após implementação:
-//   const provider = new RapidApiRatingsProvider()
-//   const ratings = await provider.getRatings('tt0137523')
-
-import type { RatingsProvider, RatingsResponse } from './client'
+import { z } from 'zod'
+import type { RatingsProvider } from './client'
 import { assertValidImdbId } from './client'
-import type { RatingsError } from './types'
+import type { RatingsError, RatingsResponse } from './types'
+
+const RAPIDAPI_HOST = 'movies-ratings2.p.rapidapi.com'
+
+const ApiResponseSchema = z.object({
+  imdbId: z.string().optional(),
+  ratings: z
+    .object({
+      imdb: z
+        .object({
+          score: z.number(),
+          reviewsCount: z.number().optional(),
+          url: z.string().optional(),
+        })
+        .optional(),
+      rotten_tomatoes: z
+        .object({
+          tomatometer: z.number().optional(),
+          tomatometerReviewsCount: z.number().optional(),
+          url: z.string().optional(),
+        })
+        .optional(),
+      letterboxd: z
+        .object({
+          score: z.number().optional(),
+          url: z.string().optional(),
+        })
+        .optional(),
+    })
+    .optional(),
+})
+
+type ApiResponse = z.infer<typeof ApiResponseSchema>
+
+function mapToRatings(data: ApiResponse, imdbId: string): RatingsResponse {
+  const ratings: RatingsResponse = []
+  const r = data.ratings
+
+  if (r?.imdb?.score != null) {
+    ratings.push({
+      source: 'imdb',
+      score: r.imdb.score,
+      score_max: 10,
+      votes: r.imdb.reviewsCount ?? null,
+      url: r.imdb.url ?? `https://www.imdb.com/title/${imdbId}/`,
+    })
+  }
+
+  if (r?.rotten_tomatoes?.tomatometer != null) {
+    ratings.push({
+      source: 'rotten_tomatoes',
+      score: r.rotten_tomatoes.tomatometer,
+      score_max: 100,
+      votes: r.rotten_tomatoes.tomatometerReviewsCount ?? null,
+      url: r.rotten_tomatoes.url ?? null,
+    })
+  }
+
+  if (r?.letterboxd?.score != null) {
+    ratings.push({
+      source: 'letterboxd',
+      score: r.letterboxd.score,
+      score_max: 5,
+      votes: null,
+      url: r.letterboxd.url ?? null,
+    })
+  }
+
+  return ratings
+}
 
 export class RapidApiRatingsProvider implements RatingsProvider {
   /**
-   * Busca ratings de IMDb, Rotten Tomatoes e Letterboxd via RapidAPI.
+   * Busca ratings de IMDb, Rotten Tomatoes e Letterboxd via movies-ratings2 (RapidAPI).
+   *
+   * Endpoint: GET https://movies-ratings2.p.rapidapi.com/ratings?id={imdbId}
+   *
+   * Escalas retornadas:
+   *  - IMDb: 0–10 (score_max 10)
+   *  - Rotten Tomatoes: tomatometer 0–100 (score_max 100)
+   *  - Letterboxd: 0–5 (score_max 5)
    *
    * @param imdbId  IMDb ID no formato `tt\d{7,}`
-   * @returns       Array de RatingResult com score, score_max, votes e url
-   * @throws        RatingsError para erros previstos
+   * @returns       Array de RatingResult com as fontes disponíveis na resposta
+   * @throws        RatingsError para erros previstos (NOT_FOUND, RATE_LIMITED, UPSTREAM_ERROR)
    */
   async getRatings(imdbId: string): Promise<RatingsResponse> {
     assertValidImdbId(imdbId)
 
-    // TODO: implementar após receber o curl do RapidAPI
-    // Estrutura esperada:
-    //
-    // const response = await fetch('<RAPIDAPI_ENDPOINT>', {
-    //   headers: {
-    //     'X-RapidAPI-Key': process.env.RAPIDAPI_KEY!,
-    //     'X-RapidAPI-Host': '<RAPIDAPI_HOST>',
-    //   },
-    // })
-    //
-    // if (response.status === 404) throw { code: 'NOT_FOUND', ... } satisfies RatingsError
-    // if (response.status === 429) throw { code: 'RATE_LIMITED', ... } satisfies RatingsError
-    // if (!response.ok) throw { code: 'UPSTREAM_ERROR', ... } satisfies RatingsError
-    //
-    // const data = await response.json()
-    // return mapRapidApiResponse(data)
+    const apiKey = process.env.RAPIDAPI_KEY
+    if (!apiKey) {
+      throw {
+        code: 'UPSTREAM_ERROR',
+        message: 'RAPIDAPI_KEY não configurada',
+        imdbId,
+      } satisfies RatingsError
+    }
 
-    throw {
-      code: 'UPSTREAM_ERROR',
-      message: 'RapidApiRatingsProvider: implementação pendente (aguardando curl da API)',
-      imdbId,
-    } satisfies RatingsError
+    let response: Response
+    try {
+      response = await fetch(
+        `https://${RAPIDAPI_HOST}/ratings?id=${imdbId}`,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'x-rapidapi-host': RAPIDAPI_HOST,
+            'x-rapidapi-key': apiKey,
+          },
+        },
+      )
+    } catch (cause) {
+      throw {
+        code: 'UPSTREAM_ERROR',
+        message: `Falha na conexão com RapidAPI: ${cause instanceof Error ? cause.message : String(cause)}`,
+        imdbId,
+      } satisfies RatingsError
+    }
+
+    if (response.status === 404) {
+      throw {
+        code: 'NOT_FOUND',
+        message: `Filme não encontrado na RapidAPI: ${imdbId}`,
+        imdbId,
+      } satisfies RatingsError
+    }
+
+    if (response.status === 429) {
+      throw {
+        code: 'RATE_LIMITED',
+        message: 'RapidAPI rate limit atingido',
+        imdbId,
+      } satisfies RatingsError
+    }
+
+    if (!response.ok) {
+      throw {
+        code: 'UPSTREAM_ERROR',
+        message: `RapidAPI retornou status ${response.status}`,
+        imdbId,
+      } satisfies RatingsError
+    }
+
+    let json: unknown
+    try {
+      json = await response.json()
+    } catch {
+      throw {
+        code: 'UPSTREAM_ERROR',
+        message: 'RapidAPI retornou JSON inválido',
+        imdbId,
+      } satisfies RatingsError
+    }
+
+    const parsed = ApiResponseSchema.safeParse(json)
+    if (!parsed.success) {
+      throw {
+        code: 'UPSTREAM_ERROR',
+        message: `Schema inesperado da RapidAPI: ${parsed.error.message}`,
+        imdbId,
+      } satisfies RatingsError
+    }
+
+    return mapToRatings(parsed.data, imdbId)
   }
 }
 

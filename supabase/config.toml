@@ -1,9 +1,9 @@
 # Configuração do Supabase CLI para dev local e geração de tipos.
 # Documentação: https://supabase.com/docs/guides/cli/config
 
-[project]
+# [project]
 # Substitua pelo ID do seu projeto (Settings > General > Reference ID)
-id = "rqqotucosggxlcsjmtfl"
+# id = "rqqotucosggxlcsjmtfl"
 
 [api]
 enabled = true
@@ -15,7 +15,7 @@ max_rows = 1000
 [db]
 port = 54322
 shadow_port = 54320
-major_version = 15
+major_version = 17
 
 [studio]
 enabled = true

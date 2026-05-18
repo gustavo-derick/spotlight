@@ -128,3 +128,33 @@
     @apply font-sans;
   }
 }
+
+@layer utilities {
+  .hide-scrollbar {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@keyframes spotlight-reveal {
+  0% {
+    mask-position: -200% 0;
+  }
+  100% {
+    mask-position: 200% 0;
+  }
+}
+
+.logo-spotlight-reveal {
+  mask-image: radial-gradient(circle at center, white 10%, transparent 40%);
+  mask-size: 300% 100%;
+  mask-repeat: no-repeat;
+  animation: spotlight-reveal 3s infinite ease-in-out;
+}
+
+.logo-container:hover .logo-spotlight-reveal {
+  animation-duration: 1.5s;
+}

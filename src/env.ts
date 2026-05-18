@@ -9,10 +9,7 @@ const serverSchema = z.object({
       message: 'SUPABASE_SERVICE_ROLE_KEY deve ser um JWT válido (começa com eyJ)',
     }),
 
-  TMDB_API_KEY: z
-    .string()
-    .min(32, 'TMDB_API_KEY deve ter pelo menos 32 caracteres')
-    .regex(/^[a-f0-9]+$/, 'TMDB_API_KEY deve conter apenas caracteres hexadecimais'),
+  TMDB_API_KEY: z.string().min(32, 'TMDB_API_KEY deve ter pelo menos 32 caracteres'),
 
   RAPIDAPI_KEY: z.string().min(20, 'RAPIDAPI_KEY deve ter pelo menos 20 caracteres'),
 

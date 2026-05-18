@@ -23,6 +23,7 @@ const cspDirectives = [
     'https://image.tmdb.org',
     'https://media.themoviedb.org',
     'https://www.themoviedb.org',
+    'https://logo.clearbit.com',
   ].join(' '),
   [
     'connect-src',
@@ -88,6 +89,12 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'media.themoviedb.org',
         pathname: '/t/p/**',
+      },
+      // Logos via Clearbit (Streaming & Ratings)
+      {
+        protocol: 'https',
+        hostname: 'logo.clearbit.com',
+        pathname: '/**',
       },
     ],
   },

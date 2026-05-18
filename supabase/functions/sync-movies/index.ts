@@ -99,11 +99,23 @@ function buildImageUrl(path: string | null, size: string): string | null {
 }
 
 async function tmdbGet<T>(path: string, params: Record<string, string> = {}): Promise<T> {
+  const apiKey = Deno.env.get('TMDB_API_KEY')!
   const url = new URL(TMDB_BASE + path)
-  url.searchParams.set('api_key', Deno.env.get('TMDB_API_KEY')!)
   url.searchParams.set('language', 'pt-BR')
+
+  const headers: Record<string, string> = {
+    Accept: 'application/json',
+  }
+
+  // Suporte tanto a v3 API Key (hex) quanto v4 Read Access Token (JWT)
+  if (apiKey.startsWith('eyJ')) {
+    headers['Authorization'] = `Bearer ${apiKey}`
+  } else {
+    url.searchParams.set('api_key', apiKey)
+  }
+
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v)
-  const res = await fetch(url.toString())
+  const res = await fetch(url.toString(), { headers })
   if (!res.ok) throw new Error(`TMDB ${res.status} ${path}`)
   return res.json() as Promise<T>
 }
@@ -114,9 +126,9 @@ async function tmdbGet<T>(path: string, params: Record<string, string> = {}): Pr
  */
 async function collectTmdbIds(): Promise<number[]> {
   const sources: Array<{ path: string; pages: number; extra: Record<string, string> }> = [
-    { path: '/movie/now_playing',   pages: 3, extra: { region: 'BR' } },
-    { path: '/movie/popular',       pages: 3, extra: { region: 'BR' } },
-    { path: '/movie/upcoming',      pages: 3, extra: { region: 'BR' } },
+    { path: '/movie/now_playing', pages: 3, extra: { region: 'BR' } },
+    { path: '/movie/popular', pages: 3, extra: { region: 'BR' } },
+    { path: '/movie/upcoming', pages: 3, extra: { region: 'BR' } },
     { path: '/trending/movie/week', pages: 2, extra: {} },
   ]
 
@@ -131,7 +143,10 @@ async function collectTmdbIds(): Promise<number[]> {
         for (const item of data.results) ids.add(item.id)
         if (page >= data.total_pages) break
       } catch (err) {
-        console.warn(`TMDB list error ${path} page ${page}:`, err instanceof Error ? err.message : err)
+        console.warn(
+          `TMDB list error ${path} page ${page}:`,
+          err instanceof Error ? err.message : err,
+        )
       }
     }
   }
@@ -173,7 +188,14 @@ function mapRatings(
   data: RatingsApiResponse,
   movieId: string,
   imdbId: string,
-): Array<{ movie_id: string; source: RatingSource; score: number; score_max: number; votes: number | null; url: string | null }> {
+): Array<{
+  movie_id: string
+  source: RatingSource
+  score: number
+  score_max: number
+  votes: number | null
+  url: string | null
+}> {
   const rows = []
   const r = data.ratings
 
@@ -223,7 +245,10 @@ async function processMovie(
   try {
     details = await fetchMovieDetails(tmdbId)
   } catch (err) {
-    console.error(`fetchMovieDetails error tmdb_id=${tmdbId}:`, err instanceof Error ? err.message : err)
+    console.error(
+      `fetchMovieDetails error tmdb_id=${tmdbId}:`,
+      err instanceof Error ? err.message : err,
+    )
     return 'error'
   }
 
@@ -261,9 +286,7 @@ async function processMovie(
   const movieId = (movieRow as any).id as string
 
   // Upsert elenco (top CAST_LIMIT por order)
-  const topCast = details.credits.cast
-    .sort((a, b) => a.order - b.order)
-    .slice(0, CAST_LIMIT)
+  const topCast = details.credits.cast.sort((a, b) => a.order - b.order).slice(0, CAST_LIMIT)
 
   if (topCast.length > 0) {
     const { data: castPeople } = await supabase
@@ -292,9 +315,7 @@ async function processMovie(
           order: m.order,
         }))
       if (castRows.length > 0) {
-        await supabase
-          .from('movie_cast')
-          .upsert(castRows, { onConflict: 'movie_id,person_id' })
+        await supabase.from('movie_cast').upsert(castRows, { onConflict: 'movie_id,person_id' })
       }
     }
   }
@@ -330,9 +351,7 @@ async function processMovie(
           job: m.job,
         }))
       if (crewRows.length > 0) {
-        await supabase
-          .from('movie_crew')
-          .upsert(crewRows, { onConflict: 'movie_id,person_id,job' })
+        await supabase.from('movie_crew').upsert(crewRows, { onConflict: 'movie_id,person_id,job' })
       }
     }
   }
@@ -375,9 +394,7 @@ async function processMovie(
     const ratingsData = await fetchRatings(imdbId)
     const ratingRows = mapRatings(ratingsData, movieId, imdbId)
     if (ratingRows.length > 0) {
-      await supabase
-        .from('movie_ratings')
-        .upsert(ratingRows, { onConflict: 'movie_id,source' })
+      await supabase.from('movie_ratings').upsert(ratingRows, { onConflict: 'movie_id,source' })
     }
   } catch (err) {
     console.warn(`ratings error imdb_id=${imdbId}:`, err instanceof Error ? err.message : err)
@@ -402,9 +419,7 @@ async function runSync(supabase: SupabaseClient): Promise<{
   // Processa em lotes de CONCURRENCY para não sobrecarregar as APIs
   for (let i = 0; i < tmdbIds.length; i += CONCURRENCY) {
     const batch = tmdbIds.slice(i, i + CONCURRENCY)
-    const results = await Promise.allSettled(
-      batch.map((id) => processMovie(supabase, id)),
-    )
+    const results = await Promise.allSettled(batch.map((id) => processMovie(supabase, id)))
     for (const result of results) {
       if (result.status === 'fulfilled') {
         if (result.value === 'processed') processed++
@@ -420,6 +435,50 @@ async function runSync(supabase: SupabaseClient): Promise<{
 }
 
 // ─── Entry point ──────────────────────────────────────────────────────────────
+
+Deno.cron('sync-movies-cron', '0 6 * * *', async () => {
+  console.log('Iniciando sync via Deno.cron...')
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+  )
+
+  const { data: logRow } = await supabase
+    .from('sync_logs')
+    .insert({ function_name: 'sync-movies (cron)', status: 'started' })
+    .select('id')
+    .single()
+
+  const logId = (logRow as any)?.id as string | undefined
+
+  try {
+    const { processed, skipped, errors } = await runSync(supabase)
+
+    if (logId) {
+      await supabase
+        .from('sync_logs')
+        .update({
+          status: errors === 0 ? 'success' : 'error',
+          finished_at: new Date().toISOString(),
+          items_processed: processed,
+          error_message: errors > 0 ? `${errors} filmes com erro, ${skipped} pulados` : null,
+        })
+        .eq('id', logId)
+    }
+  } catch (err) {
+    console.error('Erro no cron:', err)
+    if (logId) {
+      await supabase
+        .from('sync_logs')
+        .update({
+          status: 'error',
+          finished_at: new Date().toISOString(),
+          error_message: err instanceof Error ? err.message : String(err),
+        })
+        .eq('id', logId)
+    }
+  }
+})
 
 Deno.serve(async (_req) => {
   const supabase = createClient(
@@ -446,8 +505,7 @@ Deno.serve(async (_req) => {
           status: errors === 0 ? 'success' : 'error',
           finished_at: new Date().toISOString(),
           items_processed: processed,
-          error_message:
-            errors > 0 ? `${errors} filmes com erro, ${skipped} pulados` : null,
+          error_message: errors > 0 ? `${errors} filmes com erro, ${skipped} pulados` : null,
         })
         .eq('id', logId)
     }
@@ -470,9 +528,9 @@ Deno.serve(async (_req) => {
         .eq('id', logId)
     }
 
-    return new Response(
-      JSON.stringify({ ok: false, error: message }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } },
-    )
+    return new Response(JSON.stringify({ ok: false, error: message }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    })
   }
 })

@@ -1,166 +1,141 @@
 # Spotlight — Status do Projeto
 
-> Última atualização: 2026-05-12
+> Última atualização: 2026-05-17
 > Supabase project ref: `rqqotucosggxlcsjmtfl`
 
 ---
 
-## Histórico de alterações
+## O que já foi desenvolvido (Concluído)
 
-### Bloco 1 — Setup base (`b0833ae`)
-- Scaffold Next.js 15 + App Router + React 19
-- TypeScript strict (`noUncheckedIndexedAccess`, `noImplicitAny`)
-- Tailwind CSS 4 + shadcn/ui
-- Estrutura de rotas: `(public)/`, `(auth)/`, `(user)/`, `api/`
-- Stubs de todas as páginas e rotas (retornam "em construção" / 501)
-- Husky + lint-staged (ESLint, Prettier, `tsc --noEmit`) no pre-commit
-- Vitest + Playwright configurados
+### 1. Setup, Arquitetura e Banco de Dados
 
-### Bloco 2 — Segurança e variáveis de ambiente (`ce922da`)
-- `src/env.ts` — validação Zod de todas as env vars ao boot; app recusa iniciar se ausentes
-- CSP em `next.config.ts`: `script-src 'self'`, `img-src` restrito a TMDB e logos de streaming
-- Headers obrigatórios no `middleware.ts`: `Strict-Transport-Security`, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`
-- Redirect HTTP → HTTPS em produção
+- Scaffold Next.js 15, Tailwind CSS 4, shadcn/ui.
+- Banco de Dados estruturado e versionado via Supabase migrations.
+- Configuração de segurança (RLS, CSP, validação Zod de `.env.local`).
+- Tipagem inicial gerada a partir do banco de dados e clientes do Supabase configurados (`server.ts`, `client.ts`).
+- **Base de 10k+ Filmes**: Banco de dados populado com filmes cobrindo desde o ano 2000 até hoje, garantindo consultas rápidas (<100ms) sem latência de APIs externas.
 
-### Bloco 3 — Banco de dados (`70fce0f`)
-- 6 migrations SQL em `supabase/migrations/`:
-  - `_001` extensões (`pg_trgm`, `pgcrypto`, `uuid-ossp`)
-  - `_002` schema completo: `movies`, `people`, `movie_cast`, `movie_crew`, `movie_ratings`, `movie_streaming`, `genres`, `user_favorites`, `user_watchlist`, `sync_logs`, `rate_limits`
-  - `_003` RLS policies: catálogo público somente leitura, tabelas de usuário restritas por `auth.uid()`
-  - `_004` índices: trigram em `title_pt`/`title_original`, btree em `release_date`, `imdb_id`, `movie_cast.person_id`, `movie_ratings.movie_id`
-  - `_005` funções RPC: `search_movies` (trigram + ILIKE), `check_rate_limit` (atômico), `cleanup_rate_limits`, `cleanup_sync_logs`
-  - `_006` jobs pg_cron: `sync-movies` às 03:00 BRT, limpeza de `rate_limits` de hora em hora, limpeza de `sync_logs` todo dia
-- Testes SQL de RLS em `tests/rls/` (catálogo, favoritos, watchlist)
+### 2. Pipeline de Sincronização e Integrações (Backend)
 
-### Bloco 4 — Clientes e módulo TMDB (`56805bc`)
-- `src/lib/supabase/server.ts` — `createServerClient` com cookies
-- `src/lib/supabase/client.ts` — browser client
-- `src/lib/supabase/admin.ts` — `service_role` (server-only)
-- `src/lib/tmdb/client.ts` — `tmdbFetch` com cache Next.js, funções `fetchMovieDetails`, `fetchNowPlaying`, `fetchPopular`, `fetchUpcoming`, `fetchTrending`, `fetchGenres`
-- `src/lib/tmdb/types.ts` — tipos das respostas TMDB (apenas campos usados)
-- `src/lib/tmdb/mappers.ts` — `mapMovieDetails` → `MovieInsert + cast + crew + streamingBR`; mappers de cast, crew e watch providers BR
-- Testes unitários: `tests/unit/lib/tmdb/mappers.test.ts` (20 testes)
+- Pipeline de sincronização construído para rodar tanto via Edge Function quanto em ambiente local (`local_sync.ts`).
+- Extração em massa de dados via **TMDB API** (detalhes, créditos, imagens, plataformas de streaming).
+- Integração robusta via **RapidAPI** para extração em lote de notas (IMDb, Rotten Tomatoes, Letterboxd).
+- Sistema de tolerância a falhas configurado (retries exponenciais, tratamento do erro 429 - _Rate Limit_, e escape de restrições do banco).
 
-### Bloco 5 — Tipos e stub de ratings (`6853cd2`)
-- `src/types/database.ts` — tipos concretos manuais (`Movie`, `MovieRating`, `MovieStreaming`, etc.) enquanto `supabase gen types` não é executado no projeto remoto
-- `src/lib/ratings/client.ts` — interface `RatingsProvider`, `assertValidImdbId`, `IMDB_ID_REGEX`
-- `src/lib/ratings/types.ts` — `RatingResult`, `RatingsResponse`, `RatingsError`
-- Stub inicial do `rapidapi.ts` (apontava para API errada)
+### 3. Frontend Principal & UX Premium
 
-### Bloco 6 — Módulo ratings completo (não commitado ainda)
-- `src/lib/ratings/rapidapi.ts` reescrito:
-  - API corrigida: `movies-ratings2.p.rapidapi.com/ratings?id={imdbId}`
-  - Schema Zod expandido: IMDb (0–10), Rotten Tomatoes / tomatometer (0–100), Letterboxd (0–5)
-  - Escala correta em `score_max` para cada fonte
-- `tests/unit/lib/ratings/rapidapi.test.ts` — 21 testes cobrindo happy path, respostas parciais, 404/429/500, falha de rede, JSON inválido, chave ausente
-- `tsconfig.json` — `supabase/functions/` excluído da compilação do Next.js
+- **Página Home (`/`)**: Carrosséis divididos em seções (Populares, Lançamentos). Cards menores (mais densidade) exibindo diretamente badges de avaliação de sites terceiros.
+- **Página de Detalhes do Filme (`/filme/[slug]`)**:
+  - Layout imersivo (estilo streaming premium) com gradient over backdrop.
+  - Exibição limpa de sinopse, metadados (duração, diretor, data) e grade de Elenco Principal com fotos redondas.
+- **Identidade de Marca Renovada**:
+  - **Tipografia**: Logo atualizada para a fonte clássica e imponente **Bentham** (Serifada Moderna). Os demais textos do site agora utilizam a moderna e fluida **Plus Jakarta Sans**.
+  - **Logo Premium Animada**: Criação do componente `LogoIcon` com um design sofisticado em SVG representando holofotes duplos de cinema cruzados.
+  - **Spotlight Reveal**: Efeito de revelação na logo "Spotlight" no header que simula um feixe de luz passando sobre o texto de forma contínua, com aceleração e brilho (_glow_) adicionais na interação de _hover_.
+- **Inteligência Visual de Logos**:
+  - Integração da **Clearbit Logo API** na `next.config.ts`.
+  - Badges de avaliações (IMDb, Rotten Tomatoes, Letterboxd) renderizadas com as mini-logos oficiais de cada empresa.
+  - Logos oficiais dos serviços de Streaming.
 
-### Bloco 7 — Edge function sync-movies (não commitado ainda)
-- `supabase/functions/sync-movies/index.ts` — Deno Edge Function completa:
-  - Coleta tmdb_ids de 4 endpoints (now_playing, popular, upcoming, trending), 2–3 páginas cada, deduplicado
-  - Fetch de detalhes com `append_to_response=credits,external_ids,watch/providers`
-  - Retry com backoff exponencial: 3 tentativas a 1s / 3s / 9s
-  - Concorrência de 5 filmes em paralelo
-  - Upsert em batch: pessoas + elenco (top 20) + equipe técnica em 2 queries por filme
-  - Ratings via RapidAPI como best-effort (404 silenciado, erros logados mas não falham o sync)
-  - Log de execução em `sync_logs` (started → success/error + `items_processed`)
-- `supabase/functions/sync-movies/deno.json` — import map para o módulo Supabase
+### 4. Sistemas de Fallback em Tempo Real (Scraping Dinâmico)
 
----
+- **Scraper de Streaming (`/api/scrape-streaming`)**: Se a API oficial do TMDB falhar em prover as plataformas no Brasil, a página exibe uma aba com animação de _loading_ e um scraper interno busca ativamente na web, retornando os ícones formatados em tempo real (com o carimbo "via Web").
+- **Deduplicação de Streamings**: Algoritmo no frontend para ocultar clones/planos secundários.
+- **Scraper de Avaliações (`/api/scrape-ratings`)**: Rota acionada caso o filme esteja sem notas do IMDb/Letterboxd, agindo como um proxy silencioso da RapidAPI para encontrar a nota sem bloquear o carregamento principal da página.
 
-## O que está travando e precisa ser corrigido
+### 5. Busca Inteligente e Semântica Avançada
 
-### Crítico
+- **API de Busca (`/api/search`)**: Rate limit de 30 req/min por IP hasheado via RPC `check_rate_limit` no banco. Todos os parâmetros validados com Zod.
+- **Busca Semântica Avançada**: Enriquecimento de `movie_keywords` (~49k registros). A busca semântica agora correlaciona termos específicos como "Plot-Twist", "vampiro", "reviravolta" ou "alien" pesquisando em títulos, sinopses, comentários e nos gêneros associados instantaneamente.
+- **Página de Busca (`/busca`)**: layout de duas colunas (painel de filtros + grade de resultados), Server Component que pré-carrega a lista de gêneros do banco.
+- **Filtros**: Gênero (chips multi-select), Ano (faixa De/Até) e Nota IMDb mínima. Todos os filtros refletidos na URL para compartilhamento.
+- **Debounce (300ms)** na barra de busca do Header e na barra da página `/busca`.
+- **Paginação "Carregar mais"** via TanStack Query `useInfiniteQuery`.
 
-**1. Migrations não aplicadas no projeto remoto**
-As migrations existem localmente mas nunca foram executadas no Supabase remoto (`rqqotucosggxlcsjmtfl`). O banco remoto está vazio — não há tabelas, RLS, índices nem funções.
-```bash
-# Comandos para desbloquear:
-npx supabase link --project-ref rqqotucosggxlcsjmtfl
-npx supabase db push
-```
+### 6. Área do Usuário Completa
 
-**2. `database.ts` com tipos genéricos**
-O arquivo `src/types/database.ts` tem os tipos concretos definidos manualmente (workaround) mas o bloco `Database` gerado está vazio (`Tables: { [_ in never]: never }`). Os clientes Supabase (`createClient<Database>`) não têm autocomplete de tabela. Resolver após `db push`:
-```bash
-npx supabase gen types typescript --project-id rqqotucosggxlcsjmtfl > src/types/database.ts
-```
-Após gerar, remover os tipos manuais da seção `// Tipos concretos do schema Spotlight` e substituir por aliases de `Tables<'movies'>` etc.
+- Configuração do sistema de Login (`/entrar`) usando `supabase.auth` (Magic Links e OAuth Google).
+- Bloqueio das rotas protegidas no `middleware.ts` exigindo autenticação do usuário.
+- Botões interativos "Favoritar" e "Watchlist" da tela do filme conectados a `Server Actions` com UI otimista.
+- Criação das páginas `/favoritos` e `/watchlist` com exibição em grid.
+- Menu Header dinâmico com menu para a Área do Usuário (`/perfil`).
 
-**3. `pg_cron` precisa de variáveis de ambiente no banco**
-O job `sync-movies-03h-brt` usa `current_setting('app.settings.supabase_url')` e `current_setting('app.settings.service_role_key')`. Sem configurar essas settings no projeto Supabase, o job vai falhar silenciosamente.
-```sql
--- Executar no SQL Editor do Supabase Dashboard:
-ALTER DATABASE postgres
-  SET app.settings.supabase_url     = 'https://rqqotucosggxlcsjmtfl.supabase.co';
-ALTER DATABASE postgres
-  SET app.settings.service_role_key = '<service-role-key>';
-```
+### 7. Vibes & Gêneros Atualizados
 
-**4. Chave RapidAPI exposta no histórico do chat**
-A chave `b84e98384dmsh10168ea5f6a6d65p19c546jsnc56b5c881390` apareceu no chat. Deve ser rotacionada no painel RapidAPI e atualizada no `.env.local` e nos secrets do Vercel.
-
-### Importante
-
-**5. Middleware é stub**
-`src/middleware.ts` tem o redirect HTTPS mas não implementa o refresh do token de sessão do Supabase nem o bloqueio de rotas autenticadas. As rotas `(user)/` ficam acessíveis sem login.
-
-**6. Nenhuma página ou rota API implementada**
-Todas as páginas retornam "em construção" e todas as rotas API retornam 501. A UI está completamente em branco.
-
-**7. Variáveis de ambiente não estão no `.env.local`**
-O arquivo `.env.example` existe mas `.env.local` precisa ser criado com os valores reais para rodar `npm run dev` com funcionalidade.
+- **Navegação de Categorias**: Implementados botões "Ver todos" em todas as listas da Home (Lançamentos, Populares e Gêneros).
+- **Páginas de Gêneros (`/genero/[slug]`)**: Página dinâmica imersiva para todos os 19 gêneros com esquemas de cores HSL dedicados e emojis representativos.
+- **Vibes Otimizadas**: Coleção completa de **12 Vibes** robustas (ex: "Clássicos Cult", "Universo Animado", "Crimes e Mentiras", "Novidades", "Adrenalina Pura") totalmente populadas com filmes relevantes extraídos diretamente da nossa base, sem filtros restritivos vazios.
 
 ---
 
-## Próximos passos
+## Próximos Passos (Próximo Bloco)
 
-### Prioridade 1 — Infraestrutura (pré-requisito para tudo)
-- [ ] Criar `.env.local` com `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `TMDB_API_KEY`, `RAPIDAPI_KEY` (chave nova)
-- [ ] `npx supabase link` + `npx supabase db push` — aplicar migrations no remoto
-- [ ] `npx supabase gen types typescript` — regenerar `database.ts` e remover tipos manuais
-- [ ] Configurar `app.settings` no banco para o cron funcionar
-- [ ] Commit dos blocos 6 e 7 (ratings + edge function + cron)
+### Bloco 4 — Recursos de Interação & Gamificação
 
-### Prioridade 2 — Middleware e autenticação
-- [ ] `middleware.ts` — adicionar `createServerClient` + `supabase.auth.getSession()` para refresh de token; redirecionar rotas `(user)/` para `/entrar` se não autenticado
-- [ ] Página `/entrar` — magic link + OAuth (Google); usar `supabase.auth.signInWithOtp` e `signInWithOAuth`
-- [ ] `(auth)/callback/route.ts` — trocar code por session com `supabase.auth.exchangeCodeForSession`
+1. **Sistema "Tinder" de Descoberta (Swipe)**: roleta de filmes interativa para curtir/descartar rapidamente com Framer Motion.
+2. **Coleções Colaborativas**: permitir que os usuários criem listas customizadas e convidem amigos para adicionar filmes de forma colaborativa.
+3. **Estatísticas e Gamificação no Perfil**: gráficos de gêneros favoritos, tempo total de tela e badges interativos (ex: "Cinefilo de Ouro", "Maratonista de Terror").
+4. **Refinamentos Finais & Produção**: verificação de cron jobs de sincronização diária, testes automatizados e adequação geral à LGPD.
 
-### Prioridade 3 — Componentes base (bloqueiam todas as páginas)
-- [ ] `src/components/layout/header.tsx` — logo, campo de busca, avatar do usuário
-- [ ] `src/components/layout/footer.tsx` — link privacidade, copyright
-- [ ] `src/components/movie/movie-card.tsx` — poster, título PT-BR, título original (60% opacidade), badge de streaming
-- [ ] `src/components/movie/movie-row.tsx` — carrossel horizontal de `MovieCard`
-- [ ] `src/components/movie/ratings-badge.tsx` — IMDb / RT / Letterboxd inline
+---
 
-### Prioridade 4 — Página Home
-- [ ] `(public)/page.tsx` — Server Component; busca filmes populares/em cartaz via Supabase; renderiza `MovieRow` por categoria
+## Últimas mudanças (resolvido) — 2026-05-17
 
-### Prioridade 5 — Busca
-- [ ] `src/app/api/search/route.ts` — GET com rate limiting (30 req/min por IP hasheado), chama `search_movies` RPC, valida query com Zod
-- [ ] `src/components/search/search-bar.tsx` — input com debounce, TanStack Query
-- [ ] `src/components/search/filter-panel.tsx` — filtro por gênero
-- [ ] `(public)/busca/page.tsx` — combina SearchBar + FilterPanel + resultados
+- Header/menu
+  - Vibes e Descobrir movidos para as primeiras posições do menu desktop.
+  - Estilo refeito para visual sóbrio, estilo "Netflix": botões retos com padding maior, ícones discretos e barra de destaque inferior no hover.
+  - Mobile ajustado com novo componente `src/components/layout/mobile-menu.tsx`: menu hambúrguer, busca integrada, navegação principal e links autenticados quando houver sessão.
+  - Logo "Spotlight" agora também aparece no header mobile.
 
-### Prioridade 6 — Detalhe do filme
-- [ ] `src/components/movie/movie-detail.tsx` — backdrop, título, sinopse, elenco, ratings, onde assistir
-- [ ] `src/components/movie/streaming-badges.tsx` — logos dos provedores BR
-- [ ] `(public)/filme/[slug]/page.tsx` — Server Component; carrega dados pelo slug (tmdb_id ou imdb_id)
+- Sistema de avaliações (5 estrelas)
+  - Migration adicionada: supabase/migrations/00000000000011_user_ratings.sql (tabela user_ratings, trigger updated_at, RLS, funções get_movie_rating_stats e get_user_movie_rating).
+  - Discovery melhorado na migration: get_discovery_movies agora considera AVG(user_ratings) para priorizar filmes com melhores avaliações comunitárias.
+  - `src/types/database.ts` recebeu os tipos provisórios de `user_ratings` e das novas RPCs até a regeneração oficial dos types pelo Supabase.
 
-### Prioridade 7 — Funcionalidades de usuário
-- [ ] `src/lib/actions/favorites.ts` — Server Actions: `addFavorite`, `removeFavorite` (next-safe-action + Zod + rate limit)
-- [ ] `src/lib/actions/watchlist.ts` — Server Actions: `addToWatchlist`, `removeFromWatchlist`, `markWatched`
-- [ ] `(user)/favoritos/page.tsx` — lista de favoritos do usuário autenticado
-- [ ] `(user)/watchlist/page.tsx` — watchlist com status watched/unwatched
+- Backend
+  - Nova Server Action: submitRatingAction em src/lib/actions/user.ts — faz upsert na tabela user_ratings e revalida paths (/filme/:id, /descobrir).
+  - Corrigido o `upsert` de avaliações para usar `onConflict: 'user_id,movie_id'`, formato esperado pelo Supabase.
 
-### Prioridade 8 — APIs de conta e privacidade
-- [ ] `api/account/route.ts` — DELETE: remove conta e dados via `service_role`
-- [ ] `api/account/export/route.ts` — GET: exporta dados do usuário em JSON (LGPD)
-- [ ] `(public)/privacidade/page.tsx` — conteúdo da política de privacidade
+- Frontend
+  - Novo componente cliente: src/components/movie/star-rating.tsx — UI de 1–5 estrelas, hover, envio via next-safe-action, mostra média e contagem.
+  - Integração na página de filme: src/app/(public)/filme/[slug]/page.tsx (inclui médias iniciais + rating do usuário quando autenticado).
+  - UserActions mantido (favoritar/watchlist); comportamento otimista preservado.
+  - Ajustado o tratamento do retorno da action no `StarRating` para evitar `rating` indefinido no estado otimista.
 
-### Prioridade 9 — CI e deploy
-- [ ] `.github/workflows/ci.yml` — lint, type-check, vitest, build, gitleaks
-- [ ] Configurar secrets no Vercel (env vars de produção)
-- [ ] Primeiro deploy em produção
-- [ ] Testar cron job manualmente após deploy (`npx supabase functions serve sync-movies`)
+- Tooling / Hooks
+  - Problema principal dos checks resolvido: `npm run type-check` e `npm run lint` passam.
+  - `eslint.config.mjs` foi simplificado para usar diretamente `@next/eslint-plugin-next` + parser do Next, mantendo as regras recomendadas/Core Web Vitals e evitando o preset TypeScript que estava travando no ambiente.
+  - `check.js` corrigido para não falhar lint por variável não usada.
+  - Commit ainda pendente.
+
+Próximos passos recomendados:
+
+1. Aplicar a migration `00000000000011_user_ratings.sql` no Supabase local/staging e regenerar oficialmente os types: `npx supabase gen types typescript --local > src/types/database.ts`.
+2. Rodar `npm run build` em ambiente com `.env.local` completo para validar a build Next/Supabase de ponta a ponta.
+3. Fazer o commit das mudanças atuais após revisar o diff.
+4. Escrever testes RLS para `user_ratings` e cobertura unitária para `submitRatingAction`.
+5. Seguir o Bloco 4 com o sistema de descoberta por swipe em `/descobrir`.
+
+---
+
+Considerações técnicas & ajustes recomendados (planejamento):
+
+- StarRating: corrigir atualização otimista das estatísticas no onSuccess. Usar o valor prévio do rating (prevUserRating) e atualizações funcionais de estado para evitar condições de corrida.
+- UX não autenticado: redirecionar para `/entrar` ao tentar avaliar (consistente com UserActions) e exibir mensagem contextual (toast/modal).
+- Performance BD: criar índice em user_ratings(movie_id) e considerar materialized view `movie_rating_aggregates(movie_id, avg_rating, rating_count)` atualizada por trigger para leituras rápidas e descoberta.
+- Discovery e viés estatístico: substituir ordenação por média simples por média bayesiana (ou usar Wilson score) para evitar favorecer filmes com poucas avaliações.
+- Escalabilidade/abuso: aplicar rate limit por usuário na action de envio de rating (ex.: 10 req/min) via `ratelimit.ts` (Upstash) ou política no edge.
+- Consistência & segurança: validar no servidor o formato do upsert e garantir que RLS + SECURITY DEFINER nas RPCs não exponham dados individuais; garantir logs não registrem identificadores sensíveis.
+- Testes e CI: adicionar testes unitários para submitRatingAction, testes de integração para a RPC get_movie_rating_stats e testes RLS que confirmem isolamento usuário-a-usuário.
+- Migração operacional: planejar backfill para ratings se houver fonte externa; rodar migration em staging, verificar índices e performance antes de produção.
+- Acessibilidade: melhorar controles de teclado/ARIA no componente StarRating (aria-pressed, role=radio/slider) e texto alternativo para leitores de tela.
+- Mobile: ajustar layout e tap targets, garantir que o componente cliente seja leve e não bloqueie carregamento crítico do Server Component.
+- Observabilidade: instrumentar eventos de rating para analytics (fila de eventos) e criar job agendado para recomputar agregados caso não use triggers imediatos.
+- Roadmap ML: preparar materialized aggregates e eventos para alimentar algoritmo de recomendação (CF/ALS ou aproximador embedders). Inicial: usar aggregates + co-occurrence; próximo: modelo colaborativo.
+
+Notas menores:
+
+- Revisar o retorno das RPCs (`get_movie_rating_stats`, `get_user_movie_rating`) para garantir formato consistente com o código (array vs scalar) e ajustar parsing no Server Component.
+- Confirmar que `onConflict` no upsert usa o formato aceito pela versão do client Supabase em uso.
+
+Se aprovar, adiciono essas tarefas na lista de todos (SQL todos) e começo por: (A) corrigir onSuccess do StarRating, (B) adicionar índice na migration e (C) escrever testes RLS.

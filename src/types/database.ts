@@ -14,6 +14,95 @@ export type Database = {
   }
   public: {
     Tables: {
+      collection_collaborators: {
+        Row: {
+          collection_id: string
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          collection_id: string
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          collection_id?: string
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collection_collaborators_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "collections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      collection_movies: {
+        Row: {
+          added_at: string
+          collection_id: string
+          movie_id: string
+        }
+        Insert: {
+          added_at?: string
+          collection_id: string
+          movie_id: string
+        }
+        Update: {
+          added_at?: string
+          collection_id?: string
+          movie_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collection_movies_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "collections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collection_movies_movie_id_fkey"
+            columns: ["movie_id"]
+            isOneToOne: false
+            referencedRelation: "movies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      collections: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_public: boolean
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       genres: {
         Row: {
           name_pt: string
@@ -297,6 +386,32 @@ export type Database = {
         }
         Relationships: []
       }
+      user_dislikes: {
+        Row: {
+          created_at: string
+          movie_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          movie_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          movie_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_dislikes_movie_id_fkey"
+            columns: ["movie_id"]
+            isOneToOne: false
+            referencedRelation: "movies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_favorites: {
         Row: {
           created_at: string
@@ -316,6 +431,38 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "user_favorites_movie_id_fkey"
+            columns: ["movie_id"]
+            isOneToOne: false
+            referencedRelation: "movies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_ratings: {
+        Row: {
+          created_at: string
+          movie_id: string
+          rating: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          movie_id: string
+          rating: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          movie_id?: string
+          rating?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_ratings_movie_id_fkey"
             columns: ["movie_id"]
             isOneToOne: false
             referencedRelation: "movies"
@@ -367,6 +514,45 @@ export type Database = {
       }
       cleanup_rate_limits: { Args: never; Returns: undefined }
       cleanup_sync_logs: { Args: never; Returns: undefined }
+      get_discovery_movies: {
+        Args: { p_limit?: number; p_user_id: string }
+        Returns: {
+          backdrop_url: string | null
+          genres: number[]
+          id: string
+          imdb_id: string
+          last_synced_at: string
+          original_language: string
+          overview_pt: string | null
+          poster_url: string | null
+          release_date: string | null
+          runtime: number | null
+          title_original: string
+          title_pt: string
+          tmdb_id: number
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "movies"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      get_movie_rating_stats: {
+        Args: { p_movie_id: string }
+        Returns: {
+          avg_rating: number | null
+          rating_count: number
+        }[]
+      }
+      get_user_movie_rating: {
+        Args: { p_movie_id: string; p_user_id: string }
+        Returns: number | null
+      }
+      get_user_profile_stats: {
+        Args: { target_user_id: string }
+        Returns: Json
+      }
       search_movies: {
         Args: {
           p_genre_ids?: number[]
@@ -395,6 +581,26 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      search_movies_full: {
+        Args: {
+          p_genre_ids?: number[]
+          p_limit?: number
+          p_min_imdb_score?: number
+          p_offset?: number
+          p_query?: string
+          p_year_from?: number
+          p_year_to?: number
+        }
+        Returns: {
+          genres: number[]
+          id: string
+          poster_url: string
+          ratings: Json
+          release_date: string
+          title_original: string
+          title_pt: string
+        }[]
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
@@ -558,6 +764,8 @@ export type MovieStreamingInsert = TablesInsert<'movie_streaming'>
 export type Genre = Tables<'genres'>
 
 export type UserFavorite = Tables<'user_favorites'>
+
+export type UserRating = Tables<'user_ratings'>
 
 export type UserWatchlistItem = Tables<'user_watchlist'>
 

@@ -1,4 +1,11 @@
-import type { TmdbGenreListResponse, TmdbMovieDetails, TmdbMovieListResponse } from './types'
+import type {
+  TmdbEmbeddableVideo,
+  TmdbGenreListResponse,
+  TmdbMovieDetails,
+  TmdbMovieListResponse,
+  TmdbVideo,
+  TmdbVideosResponse,
+} from './types'
 
 const BASE_URL = 'https://api.themoviedb.org/3'
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p'
@@ -62,6 +69,59 @@ export async function fetchMovieDetails(tmdbId: number): Promise<TmdbMovieDetail
     append_to_response: 'credits,external_ids,watch/providers',
     region: 'BR',
   })
+}
+
+function isEmbeddableVideo(video: TmdbVideo): video is TmdbEmbeddableVideo {
+  return video.site === 'YouTube' || video.site === 'Vimeo'
+}
+
+function trailerScore(video: TmdbEmbeddableVideo): number {
+  let score = 0
+  if (video.official) score += 100
+  if (video.site === 'YouTube') score += 20
+  if (video.iso_639_1 === 'pt') score += 10
+  if (video.iso_3166_1 === 'BR') score += 5
+  if (/trailer/i.test(video.name)) score += 5
+  score += Math.min(video.size || 0, 1080) / 1000
+  return score
+}
+
+function selectPreferredTrailer(videos: TmdbVideo[]): TmdbEmbeddableVideo | null {
+  const trailers = videos.filter(isEmbeddableVideo).filter((video) => video.type === 'Trailer')
+
+  trailers.sort((a, b) => {
+    const scoreDiff = trailerScore(b) - trailerScore(a)
+    if (scoreDiff !== 0) return scoreDiff
+    return new Date(b.published_at).getTime() - new Date(a.published_at).getTime()
+  })
+
+  return trailers[0] ?? null
+}
+
+/**
+ * Busca vídeos cadastrados na TMDB para um filme.
+ *
+ * @param tmdbId    ID numérico do filme na TMDB
+ * @param language  Idioma da resposta da TMDB
+ */
+export async function fetchMovieVideos(
+  tmdbId: number,
+  language = 'pt-BR',
+): Promise<TmdbVideosResponse> {
+  return tmdbFetch<TmdbVideosResponse>(`/movie/${tmdbId}/videos`, { language }, 3600)
+}
+
+/**
+ * Busca o melhor trailer embutível disponível. Prioriza trailers oficiais em
+ * português e usa inglês como fallback, pois muitos filmes não têm trailer BR.
+ */
+export async function fetchMovieTrailer(tmdbId: number): Promise<TmdbEmbeddableVideo | null> {
+  const localizedVideos = await fetchMovieVideos(tmdbId, 'pt-BR')
+  const localizedTrailer = selectPreferredTrailer(localizedVideos.results)
+  if (localizedTrailer) return localizedTrailer
+
+  const fallbackVideos = await fetchMovieVideos(tmdbId, 'en-US')
+  return selectPreferredTrailer(fallbackVideos.results)
 }
 
 /**

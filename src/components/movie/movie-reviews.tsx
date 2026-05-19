@@ -13,24 +13,21 @@ export function MovieReviews({ tmdbId }: MovieReviewsProps) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    async function fetchReviews() {
-      if (!tmdbId) {
-        setLoading(false)
-        return
-      }
-      try {
-        const response = await fetch(`/api/movie-reviews?tmdbId=${tmdbId}`)
-        if (response.ok) {
-          const data = await response.json()
-          setReviews(data.results || [])
-        }
-      } catch (err) {
-        console.error('Error fetching movie reviews:', err)
-      } finally {
-        setLoading(false)
-      }
+    if (!tmdbId) {
+      setLoading(false)
+      return
     }
-    fetchReviews()
+    const controller = new AbortController()
+
+    fetch(`/api/movie-reviews?tmdbId=${tmdbId}`, { signal: controller.signal })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => data && setReviews(data.results || []))
+      .catch((err) => {
+        if (err.name !== 'AbortError') console.error('Error fetching reviews:', err)
+      })
+      .finally(() => setLoading(false))
+
+    return () => controller.abort()
   }, [tmdbId])
 
   if (loading) {

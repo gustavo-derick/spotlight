@@ -1,13 +1,48 @@
-import { VIBES } from '@/config/vibes'
-import Link from 'next/link'
+import { createClient } from '@/lib/supabase/server'
+import { VIBES, type Vibe } from '@/config/vibes'
+import { VibeCard } from '@/components/vibes/vibe-card'
 import { Sparkles } from 'lucide-react'
+
+export const revalidate = 3600
 
 export const metadata = {
   title: 'Vibes | Spotlight',
   description: 'Descubra filmes baseados no seu humor e estado de espírito.',
 }
 
-export default function VibesPage() {
+async function fetchPosters(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  vibe: Vibe,
+): Promise<string[]> {
+  let q: any = supabase.from('movies').select('poster_url').not('poster_url', 'is', null).limit(6)
+
+  if (vibe.filters.tmdb_ids?.length) {
+    q = q.in('tmdb_id', vibe.filters.tmdb_ids.slice(0, 14))
+  } else {
+    if (vibe.filters.genre_ids?.length) {
+      q = q.overlaps('genres', vibe.filters.genre_ids)
+    }
+    if (vibe.filters.year_from) {
+      q = q.gte('release_date', `${vibe.filters.year_from}-01-01`)
+    }
+    if (vibe.filters.year_to) {
+      q = q.lte('release_date', `${vibe.filters.year_to}-12-31`)
+    }
+  }
+
+  const { data } = (await q) as { data: Array<{ poster_url: string | null }> | null }
+  return (data ?? []).map((m) => m.poster_url).filter((u): u is string => u !== null)
+}
+
+export default async function VibesPage() {
+  const supabase = await createClient()
+
+  const postersByVibe = await Promise.all(VIBES.map((v) => fetchPosters(supabase, v)))
+
+  const vibesWithPosters = VIBES.map((vibe, i) => ({ vibe, posters: postersByVibe[i] ?? [] }))
+  const featured = vibesWithPosters.filter(({ vibe }) => vibe.featured)
+  const regular = vibesWithPosters.filter(({ vibe }) => !vibe.featured)
+
   return (
     <main className="container mx-auto flex flex-col items-center px-4 py-12 md:py-20">
       <div className="mb-12 max-w-2xl text-center">
@@ -21,33 +56,18 @@ export default function VibesPage() {
         </p>
       </div>
 
-      <div className="grid w-full max-w-6xl grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {VIBES.map((vibe) => (
-          <Link
-            key={vibe.slug}
-            href={`/vibes/${vibe.slug}`}
-            className="group relative overflow-hidden rounded-3xl transition-transform hover:scale-[1.02] active:scale-[0.98]"
-          >
-            {/* Fundo Gradiente */}
-            <div
-              className={`absolute inset-0 bg-gradient-to-br ${vibe.colors} opacity-80 transition-opacity group-hover:opacity-100`}
-            />
-
-            {/* Conteúdo */}
-            <div className="relative flex h-full min-h-[240px] flex-col justify-end p-8">
-              <span className="mb-4 origin-bottom-left transform text-5xl transition-transform group-hover:scale-110 group-hover:-rotate-6">
-                {vibe.emoji}
-              </span>
-              <h2 className="mb-2 text-2xl font-bold text-white shadow-sm drop-shadow-md">
-                {vibe.name}
-              </h2>
-              <p className="font-medium text-white/80">{vibe.description}</p>
-            </div>
-
-            {/* Brilho hover */}
-            <div className="absolute inset-0 bg-white opacity-0 mix-blend-overlay transition-opacity duration-500 group-hover:opacity-20" />
-          </Link>
+      <div className="flex w-full max-w-6xl flex-col gap-5">
+        {/* Vibes em destaque */}
+        {featured.map(({ vibe, posters }) => (
+          <VibeCard key={vibe.slug} vibe={vibe} posters={posters} />
         ))}
+
+        {/* Grid das demais vibes */}
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {regular.map(({ vibe, posters }) => (
+            <VibeCard key={vibe.slug} vibe={vibe} posters={posters} />
+          ))}
+        </div>
       </div>
     </main>
   )

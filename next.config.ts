@@ -35,6 +35,13 @@ const cspDirectives = [
     'https://api.rapidapi.com',
     'https://api.themoviedb.org',
   ].join(' '),
+  [
+    'frame-src',
+    "'self'",
+    'https://www.youtube.com',
+    'https://www.youtube-nocookie.com',
+    'https://player.vimeo.com',
+  ].join(' '),
   "font-src 'self' data:",
   "object-src 'none'",
   "base-uri 'self'",
@@ -77,6 +84,10 @@ const securityHeaders = [
 ]
 
 const nextConfig: NextConfig = {
+  turbopack: {
+    root: '.',
+  },
+
   images: {
     remotePatterns: [
       {

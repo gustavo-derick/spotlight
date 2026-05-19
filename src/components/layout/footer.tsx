@@ -1,16 +1,22 @@
 import Link from 'next/link'
-import { Clapperboard } from 'lucide-react'
+import Image from 'next/image'
 
-export function Footer() {
+export function Footer({ className }: { className?: string }) {
   return (
-    <footer className="mt-auto border-t border-zinc-800/40 bg-black py-8 md:py-12">
+    <footer
+      className={`mt-auto border-t border-zinc-800/40 bg-black py-8 md:py-12 ${className ?? ''}`}
+    >
       <div className="container mx-auto flex flex-col items-center justify-between gap-6 px-4 md:flex-row md:px-8">
         <div className="flex flex-col items-center gap-2 md:items-start">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="rounded-full bg-white/10 p-1.5 ring-1 ring-white/20">
-              <Clapperboard className="h-4 w-4 text-white" />
-            </div>
-            <span className="text-lg font-bold tracking-tight">Spotlight</span>
+          <Link href="/" className="flex items-center">
+            <Image
+              src="/logo-spotlight-branca.png"
+              alt="Spotlight"
+              width={120}
+              height={36}
+              className="h-7 w-auto opacity-70 transition-opacity hover:opacity-100"
+              style={{ filter: 'invert(1)' }}
+            />
           </Link>
           <p className="text-sm text-zinc-500">
             Sua plataforma definitiva de descoberta de filmes.

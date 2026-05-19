@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server'
 
 import { updateSession } from '@/lib/supabase/middleware'
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   // Atualiza os cookies da sessão do Supabase (renovação do token e roteamento auth)
   let response = await updateSession(request)
 

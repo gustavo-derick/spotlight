@@ -24,7 +24,6 @@ export default async function VibePage({ params }: { params: Promise<{ slug: str
 
   const supabase = await createClient()
 
-  // Busca direta no banco com os filtros da vibe — mais confiável após o bulk sync
   const query = supabase
     .from('movies')
     .select(
@@ -33,16 +32,19 @@ export default async function VibePage({ params }: { params: Promise<{ slug: str
     .not('poster_url', 'is', null)
     .limit(200)
 
-  // Aplica filtro de gêneros se existir
-  if (vibe.filters.genre_ids?.length) {
-    query.overlaps('genres', vibe.filters.genre_ids)
-  }
-  // Aplica filtro de ano
-  if (vibe.filters.year_from) {
-    query.gte('release_date', `${vibe.filters.year_from}-01-01`)
-  }
-  if (vibe.filters.year_to) {
-    query.lte('release_date', `${vibe.filters.year_to}-12-31`)
+  // Vibe curada por tmdb_ids — ignora os demais filtros
+  if (vibe.filters.tmdb_ids?.length) {
+    query.in('tmdb_id', vibe.filters.tmdb_ids)
+  } else {
+    if (vibe.filters.genre_ids?.length) {
+      query.overlaps('genres', vibe.filters.genre_ids)
+    }
+    if (vibe.filters.year_from) {
+      query.gte('release_date', `${vibe.filters.year_from}-01-01`)
+    }
+    if (vibe.filters.year_to) {
+      query.lte('release_date', `${vibe.filters.year_to}-12-31`)
+    }
   }
 
   const { data: moviesData, error } = await query.order('release_date', { ascending: false })
@@ -61,14 +63,18 @@ export default async function VibePage({ params }: { params: Promise<{ slug: str
     })
   }
 
-  // Fisher-Yates shuffle para descoberta aleatória
-  for (let i = movies.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[movies[i], movies[j]] = [movies[j], movies[i]]
+  if (vibe.filters.tmdb_ids?.length) {
+    // Preserva a ordem da curadoria
+    const order = new Map(vibe.filters.tmdb_ids.map((id, i) => [id, i]))
+    movies.sort((a, b) => (order.get(a.tmdb_id) ?? 99) - (order.get(b.tmdb_id) ?? 99))
+  } else {
+    // Fisher-Yates shuffle para descoberta aleatória
+    for (let i = movies.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[movies[i], movies[j]] = [movies[j], movies[i]]
+    }
+    movies = movies.slice(0, 24)
   }
-
-  // Pegamos os primeiros 24 após embaralhar
-  movies = movies.slice(0, 24)
 
   return (
     <main className="min-h-screen">

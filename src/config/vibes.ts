@@ -4,8 +4,10 @@ export type Vibe = {
   emoji: string
   description: string
   colors: string
+  featured?: boolean
   filters: {
     genre_ids?: number[]
+    tmdb_ids?: number[]
     year_from?: number
     year_to?: number
     min_imdb_score?: number
@@ -13,6 +15,60 @@ export type Vibe = {
 }
 
 export const VIBES: Vibe[] = [
+  {
+    slug: 'reviravolta',
+    name: 'Não acredite em nada',
+    emoji: '🔀',
+    description:
+      'Filmes que viram sua cabeça de cabeça pra baixo. Você não vai ver o final chegando.',
+    colors: 'from-violet-900 via-rose-900 to-zinc-900',
+    featured: true,
+    filters: {
+      // Filmes selecionados a dedo por reviravolta, choque ou quebra de expectativa
+      tmdb_ids: [
+        550, // Clube da Luta
+        745, // O Sexto Sentido
+        11324, // Ilha do Medo
+        1124, // O Grande Truque
+        77, // Amnésia
+        27205, // A Origem
+        210577, // Garota Exemplar
+        629, // Os Suspeitos
+        807, // Seven – Os Sete Crimes Capitais
+        496243, // Parasita
+        419430, // Corra!
+        546554, // Entre Facas e Segredos
+        458156, // Nós
+        37799, // Cisne Negro
+        157336, // Interestelar
+        329865, // A Chegada
+        141, // Donnie Darko
+        453, // Uma Mente Brilhante
+        37165, // O Show de Truman
+        539, // Psicose
+        381288, // Fragmentado
+        87516, // Looper
+        59967, // Código Fonte
+        225240, // Predestinação
+        10625, // O Efeito Borboleta
+        493922, // Hereditário
+        264660, // Ex Machina
+        1329, // Os Outros
+        10220, // Identidade
+        220289, // Coerência
+        340275, // Animais Noturnos
+        265177, // Nightcrawler
+        9479, // Prova de Inocência
+        11517, // O Jogo
+        146233, // Prisioneiros
+        1018, // Mulholland Drive
+        6947, // A Vila
+        1359, // Psicopata Americano
+        503919, // O Farol
+        661374, // Entre Facas e Segredos 2
+      ],
+    },
+  },
   {
     slug: 'acao-pipoca',
     name: 'Ação Pipoca',

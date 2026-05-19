@@ -73,6 +73,32 @@ export interface TmdbWatchProvidersResponse {
   }
 }
 
+// ─── Vídeos ──────────────────────────────────────────────────────────────────
+
+export interface TmdbVideo {
+  id: string
+  iso_639_1: string
+  iso_3166_1: string
+  key: string
+  name: string
+  site: string
+  size: number
+  type: string
+  official: boolean
+  published_at: string
+}
+
+export type TmdbVideoSite = 'YouTube' | 'Vimeo'
+
+export type TmdbEmbeddableVideo = TmdbVideo & {
+  site: TmdbVideoSite
+}
+
+export interface TmdbVideosResponse {
+  id: number
+  results: TmdbVideo[]
+}
+
 // ─── Filme ────────────────────────────────────────────────────────────────────
 
 export interface TmdbMovie {

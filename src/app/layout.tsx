@@ -30,6 +30,7 @@ export const metadata: Metadata = {
 
 import { Header } from '@/components/layout/header'
 import { Footer } from '@/components/layout/footer'
+import { BottomNav } from '@/components/layout/bottom-nav'
 import { QueryProvider } from '@/components/query-provider'
 
 export default function RootLayout({
@@ -46,8 +47,9 @@ export default function RootLayout({
       <body className="bg-background text-foreground flex min-h-full flex-col">
         <QueryProvider>
           <Header />
-          <main className="flex flex-1 flex-col">{children}</main>
-          <Footer />
+          <main className="flex flex-1 flex-col pb-16 md:pb-0">{children}</main>
+          <Footer className="mb-16 md:mb-0" />
+          <BottomNav />
         </QueryProvider>
       </body>
     </html>

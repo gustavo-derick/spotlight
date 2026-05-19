@@ -1,15 +1,16 @@
 import { createClient } from '@/lib/supabase/server'
 import Image from 'next/image'
 import { notFound } from 'next/navigation'
-import { Clock, Calendar, Clapperboard, MonitorPlay, Heart, BookmarkPlus } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Clock, Calendar, Clapperboard, MonitorPlay } from 'lucide-react'
 
 import { ScrapedStreaming } from '@/components/movie/scraped-streaming'
 import { ScrapedRatings } from '@/components/movie/scraped-ratings'
 import { MovieReviews } from '@/components/movie/movie-reviews'
+import { TrailerDialog } from '@/components/movie/trailer-dialog'
 
 import { UserActions } from '@/components/movie/user-actions'
 import { StarRating } from '@/components/movie/star-rating'
+import { fetchMovieTrailer } from '@/lib/tmdb/client'
 
 export const revalidate = 3600
 
@@ -78,6 +79,15 @@ export default async function FilmePage({ params }: { params: Promise<{ slug: st
 
   const director = movie.movie_crew?.find((c: any) => c.job === 'Director')
 
+  let trailer = null
+  if (typeof movie.tmdb_id === 'number') {
+    try {
+      trailer = await fetchMovieTrailer(movie.tmdb_id)
+    } catch (err) {
+      console.warn('Erro ao buscar trailer TMDB:', err instanceof Error ? err.message : err)
+    }
+  }
+
   // Separar streamings (priorizar assinatura/flatrate) e deduplicar
   const rawFlatrate = movie.movie_streaming?.filter((s: any) => s.type === 'flatrate') || []
   const uniqueProviders = new Map()
@@ -139,7 +149,7 @@ export default async function FilmePage({ params }: { params: Promise<{ slug: st
   return (
     <main className="flex min-h-screen flex-col pb-16">
       {/* Hero Section */}
-      <section className="relative flex h-[50vh] min-h-[400px] w-full items-end">
+      <section className="relative flex h-[45vh] min-h-[320px] w-full items-end md:h-[50vh] md:min-h-[400px]">
         {movie.backdrop_url ? (
           <>
             <div className="absolute inset-0 z-0">
@@ -160,7 +170,7 @@ export default async function FilmePage({ params }: { params: Promise<{ slug: st
           <div className="absolute inset-0 z-0 bg-zinc-900" />
         )}
 
-        <div className="relative z-20 container mx-auto flex flex-col items-end gap-6 px-4 pb-8 md:flex-row md:items-start md:gap-8 md:px-8">
+        <div className="relative z-20 container mx-auto flex flex-col items-start gap-6 px-4 pb-6 md:flex-row md:items-start md:gap-8 md:px-8 md:pb-8">
           {/* Poster Desktop (visível apenas md+) */}
           <div className="relative -mt-32 hidden aspect-[2/3] w-48 shrink-0 overflow-hidden rounded-xl border-2 border-zinc-800 shadow-2xl md:block lg:w-64">
             {movie.poster_url ? (
@@ -264,6 +274,15 @@ export default async function FilmePage({ params }: { params: Promise<{ slug: st
                 initialWatchlist={inWatchlist}
                 isAuthenticated={!!user}
               />
+
+              {trailer && (
+                <TrailerDialog
+                  trailer={trailer}
+                  movieTitle={movie.title_pt || movie.title_original}
+                  size="lg"
+                  className="w-fit bg-white px-6 text-black hover:bg-zinc-200"
+                />
+              )}
             </div>
           </div>
         </div>

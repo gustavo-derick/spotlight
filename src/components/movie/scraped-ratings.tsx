@@ -12,24 +12,21 @@ export function ScrapedRatings({ imdbId }: ScrapedRatingsProps) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    async function fetchRatings() {
-      if (!imdbId) {
-        setLoading(false)
-        return
-      }
-      try {
-        const response = await fetch(`/api/scrape-ratings?imdbId=${imdbId}`)
-        if (response.ok) {
-          const data = await response.json()
-          setRatings(data.results || [])
-        }
-      } catch (err) {
-        console.error('Error fetching scraped ratings data:', err)
-      } finally {
-        setLoading(false)
-      }
+    if (!imdbId) {
+      setLoading(false)
+      return
     }
-    fetchRatings()
+    const controller = new AbortController()
+
+    fetch(`/api/scrape-ratings?imdbId=${imdbId}`, { signal: controller.signal })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => data && setRatings(data.results || []))
+      .catch((err) => {
+        if (err.name !== 'AbortError') console.error('Error fetching ratings:', err)
+      })
+      .finally(() => setLoading(false))
+
+    return () => controller.abort()
   }, [imdbId])
 
   if (loading) {

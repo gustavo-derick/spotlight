@@ -19,25 +19,20 @@ export function ScrapedStreaming({ title }: ScrapedStreamingProps) {
   const [error, setError] = useState(false)
 
   useEffect(() => {
-    async function fetchScrapedData() {
-      try {
-        const response = await fetch(`/api/scrape-streaming?title=${encodeURIComponent(title)}`)
+    const controller = new AbortController()
 
-        if (!response.ok) {
-          throw new Error('Failed to fetch')
-        }
+    fetch(`/api/scrape-streaming?title=${encodeURIComponent(title)}`, { signal: controller.signal })
+      .then((res) => {
+        if (!res.ok) throw new Error('Failed to fetch')
+        return res.json()
+      })
+      .then((data) => setProviders(data.results || []))
+      .catch((err) => {
+        if (err.name !== 'AbortError') setError(true)
+      })
+      .finally(() => setLoading(false))
 
-        const data = await response.json()
-        setProviders(data.results || [])
-      } catch (err) {
-        console.error('Error fetching scraped streaming data:', err)
-        setError(true)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchScrapedData()
+    return () => controller.abort()
   }, [title])
 
   return (

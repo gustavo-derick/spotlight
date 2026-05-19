@@ -33,22 +33,19 @@ export function MovieRow({ title, movies, viewAllLink }: MovieRowProps) {
 
       {/* Container for horizontal scrolling */}
       <div className="relative w-full">
-        {/* Left fade out gradient - hidden on mobile */}
-        <div className="from-background pointer-events-none absolute top-0 bottom-0 left-0 z-10 hidden w-8 bg-gradient-to-r to-transparent md:block" />
-
-        <div className="hide-scrollbar flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pt-2 pb-6 md:px-8">
+        <div className="hide-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pt-2 pb-6 md:gap-4 md:px-8">
           {movies.map((movie) => (
             <div
               key={movie.id}
-              className="w-[120px] flex-none snap-start md:w-[150px] lg:w-[180px]"
+              className="w-[140px] flex-none snap-start sm:w-[150px] lg:w-[180px]"
             >
               <MovieCard movie={movie} />
             </div>
           ))}
         </div>
 
-        {/* Right fade out gradient - hidden on mobile */}
-        <div className="from-background pointer-events-none absolute top-0 right-0 bottom-0 z-10 hidden w-16 bg-gradient-to-l to-transparent md:block" />
+        {/* Right fade — sempre visível, indica scroll */}
+        <div className="from-background pointer-events-none absolute top-0 right-0 bottom-6 z-10 w-10 bg-gradient-to-l to-transparent md:w-16" />
       </div>
     </section>
   )

@@ -1,13 +1,31 @@
+import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { MovieRow } from '@/components/movie/movie-row'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Play, Info } from 'lucide-react'
+import { Info } from 'lucide-react'
+import { TrailerDialog } from '@/components/movie/trailer-dialog'
+import { fetchMovieTrailer } from '@/lib/tmdb/client'
 
-// Forçamos a revalidação da página a cada 1 hora para manter os dados frescos
-// (mas dependemos do sync no background de qualquer forma)
 export const revalidate = 3600
+
+async function HeroTrailerSection({ tmdbId, title }: { tmdbId: number; title: string }) {
+  try {
+    const trailer = await fetchMovieTrailer(tmdbId)
+    if (!trailer) return null
+    return (
+      <TrailerDialog
+        trailer={trailer}
+        movieTitle={title}
+        size="lg"
+        className="bg-white px-8 text-black hover:bg-zinc-200"
+      />
+    )
+  } catch {
+    return null
+  }
+}
 
 export default async function HomePage() {
   const supabase = await createClient()
@@ -30,7 +48,7 @@ export default async function HomePage() {
     // Hero
     supabase
       .from('movies')
-      .select('id, title_pt, title_original, overview_pt, backdrop_url, release_date')
+      .select('id, tmdb_id, title_pt, title_original, overview_pt, backdrop_url, release_date')
       .order('release_date', { ascending: false })
       .not('backdrop_url', 'is', null)
       .limit(1)
@@ -93,7 +111,7 @@ export default async function HomePage() {
   return (
     <div className="flex min-h-screen flex-col pb-16">
       {/* Hero Section */}
-      <section className="relative flex h-[70vh] max-h-[800px] min-h-[500px] w-full items-end">
+      <section className="relative flex h-[55vh] max-h-[800px] min-h-[360px] w-full items-end md:h-[70vh] md:min-h-[500px]">
         {heroMovie?.backdrop_url ? (
           <>
             <div className="absolute inset-0 z-0">
@@ -128,13 +146,14 @@ export default async function HomePage() {
             <div className="flex items-center gap-3 pt-4">
               {heroMovie ? (
                 <>
-                  <Button
-                    size="lg"
-                    className="rounded-full bg-white px-8 font-semibold text-black hover:bg-zinc-200"
-                  >
-                    <Play className="mr-2 h-5 w-5 fill-current" />
-                    Assistir Trailer
-                  </Button>
+                  {heroMovie.tmdb_id && (
+                    <Suspense fallback={null}>
+                      <HeroTrailerSection
+                        tmdbId={heroMovie.tmdb_id}
+                        title={heroMovie.title_pt || heroMovie.title_original}
+                      />
+                    </Suspense>
+                  )}
                   <Link href={`/filme/${heroMovie.id}`}>
                     <Button
                       size="lg"

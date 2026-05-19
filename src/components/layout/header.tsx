@@ -1,9 +1,9 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { User, Flame, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/server'
 import { DynamicSearch } from '@/components/search/dynamic-search'
-import { LogoIcon } from '@/components/layout/logo-icon'
 import { MobileMenu } from '@/components/layout/mobile-menu'
 
 export async function Header() {
@@ -15,34 +15,16 @@ export async function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-zinc-800/40 bg-black/60 backdrop-blur-xl supports-[backdrop-filter]:bg-black/60">
       <div className="container mx-auto flex h-16 items-center px-4 md:px-8">
-        <Link href="/" className="group logo-container mr-4 flex items-center gap-3 md:mr-8">
-          <div className="relative">
-            <div className="rounded-xl bg-white/10 p-1.5 ring-1 ring-white/20 transition-all duration-500 group-hover:scale-110 group-hover:bg-white/20 group-hover:ring-white/40">
-              <LogoIcon className="h-6 w-6 text-white" />
-            </div>
-            {/* Glow effect */}
-            <div className="absolute inset-0 rounded-full bg-white/20 opacity-0 blur-xl transition-opacity duration-500 group-hover:opacity-100" />
-          </div>
-          <div className="relative">
-            <span
-              className="text-xl font-medium tracking-wide text-white md:hidden"
-              style={{ fontFamily: 'var(--font-bentham)' }}
-            >
-              Spotlight
-            </span>
-            <span
-              className="hidden text-2xl font-medium tracking-wide opacity-20 md:inline-block"
-              style={{ fontFamily: 'var(--font-bentham)' }}
-            >
-              Spotlight
-            </span>
-            <span
-              className="logo-spotlight-reveal absolute inset-0 hidden text-2xl font-medium tracking-wide md:inline-block"
-              style={{ fontFamily: 'var(--font-bentham)' }}
-            >
-              Spotlight
-            </span>
-          </div>
+        <Link href="/" className="group mr-4 -ml-2 flex items-center p-2 md:mr-8 md:ml-0 md:p-0">
+          <Image
+            src="/logo-spotlight-branca.png"
+            alt="Spotlight"
+            width={140}
+            height={40}
+            className="h-7 w-auto transition-opacity duration-300 group-hover:opacity-80 md:h-8"
+            style={{ filter: 'invert(1)' }}
+            priority
+          />
         </Link>
 
         <nav className="hidden items-center gap-6 text-sm font-medium text-zinc-400 md:flex">

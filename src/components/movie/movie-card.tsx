@@ -62,7 +62,7 @@ export function MovieCard({ movie, priority = false }: MovieCardProps) {
             src={movie.poster_url}
             alt={movie.title_pt || movie.title_original}
             fill
-            sizes="(max-width: 768px) 33vw, (max-width: 1200px) 20vw, 15vw"
+            sizes="(max-width: 640px) 140px, (max-width: 1024px) 150px, 180px"
             priority={priority}
             className="object-cover transition-transform duration-500 group-hover:scale-105"
           />

@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 import { actionClient } from '@/lib/safe-action'
-import { redirect } from 'next/navigation'
+import { clientEnv } from '@/env'
 
 // Schema
 const signInSchema = z.object({
@@ -21,7 +21,7 @@ export const signInWithEmailAction = actionClient
       email,
       options: {
         // Redireciona de volta para o app. (NEXT_PUBLIC_APP_URL configurado na ENV local)
-        emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/callback`,
+        emailRedirectTo: `${clientEnv.NEXT_PUBLIC_APP_URL}/callback`,
       },
     })
 
@@ -42,7 +42,7 @@ export const getOAuthUrlAction = actionClient
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/callback`,
+        redirectTo: `${clientEnv.NEXT_PUBLIC_APP_URL}/callback`,
       },
     })
 

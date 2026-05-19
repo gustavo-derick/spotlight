@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { MovieCard } from '@/components/movie/movie-card'
+import { MovieGrid } from '@/components/movie/movie-grid'
 import { TrendingUp } from 'lucide-react'
 
 export const revalidate = 3600
@@ -46,11 +46,7 @@ export default async function PopularesPage() {
       </div>
 
       {movies.length > 0 ? (
-        <div className="grid grid-cols-2 gap-4 gap-y-8 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-          {movies.map((movie: any, i: number) => (
-            <MovieCard key={movie.id} movie={movie} priority={i < 6} />
-          ))}
-        </div>
+        <MovieGrid movies={movies} />
       ) : (
         <div className="flex flex-col items-center justify-center py-32 text-center">
           <TrendingUp className="mb-4 h-16 w-16 text-zinc-700" />

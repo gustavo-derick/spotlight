@@ -31,13 +31,16 @@ export async function GET(request: NextRequest) {
   const hashedIp = createHash('sha256').update(rawIp).digest('hex').slice(0, 32)
 
   const admin = createAdminClient()
-  const { data: allowed } = await admin.rpc('check_rate_limit', {
+  const { data: allowed, error: rateError } = await admin.rpc('check_rate_limit', {
     p_key: `search:${hashedIp}`,
     p_max_requests: 30,
     p_window_seconds: 60,
   })
 
-  if (!allowed) {
+  if (rateError) {
+    console.error('[api/search] rate limit check error:', rateError.message)
+    // Fail-open: se a função de rate limit falhar, permite a requisição
+  } else if (allowed === false) {
     return NextResponse.json(
       { error: 'Muitas requisições. Tente novamente em breve.' },
       { status: 429 },

@@ -1,7 +1,7 @@
 import { VIBES } from '@/config/vibes'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { MovieCard } from '@/components/movie/movie-card'
+import { MovieGrid } from '@/components/movie/movie-grid'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 
@@ -73,7 +73,6 @@ export default async function VibePage({ params }: { params: Promise<{ slug: str
       const j = Math.floor(Math.random() * (i + 1))
       ;[movies[i], movies[j]] = [movies[j], movies[i]]
     }
-    movies = movies.slice(0, 24)
   }
 
   return (
@@ -108,11 +107,7 @@ export default async function VibePage({ params }: { params: Promise<{ slug: str
       {/* Grid de Filmes */}
       <section className="container mx-auto max-w-7xl px-4 py-12">
         {movies.length > 0 ? (
-          <div className="grid grid-cols-2 gap-4 gap-y-8 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-            {movies.map((movie: any, i: number) => (
-              <MovieCard key={movie.id} movie={movie} priority={i < 6} />
-            ))}
-          </div>
+          <MovieGrid movies={movies} />
         ) : (
           <div className="rounded-2xl border border-zinc-800 bg-zinc-900/30 py-20 text-center">
             <span className="mb-4 block text-5xl">😢</span>

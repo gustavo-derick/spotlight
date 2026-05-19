@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { MovieCard } from '@/components/movie/movie-card'
+import { MovieGrid } from '@/components/movie/movie-grid'
 import { notFound } from 'next/navigation'
 import { GENRE_SLUGS, GENRE_MAP, GENRE_COLORS, GENRE_EMOJIS } from '@/config/genres'
 import { ArrowLeft } from 'lucide-react'
@@ -72,11 +72,7 @@ export default async function GeneroPage({ params }: { params: Promise<{ slug: s
       {/* Grid */}
       <section className="container mx-auto max-w-7xl px-4 py-10">
         {movies.length > 0 ? (
-          <div className="grid grid-cols-2 gap-4 gap-y-8 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-            {movies.map((movie: any, i: number) => (
-              <MovieCard key={movie.id} movie={movie} priority={i < 6} />
-            ))}
-          </div>
+          <MovieGrid movies={movies} />
         ) : (
           <div className="py-24 text-center">
             <span className="text-5xl">{emoji}</span>

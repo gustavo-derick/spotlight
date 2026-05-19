@@ -42,6 +42,9 @@ export default function EntrarPage() {
         alert(data?.message || 'Erro ao inicializar OAuth.')
       }
     },
+    onError: ({ error }) => {
+      alert(error.serverError || 'Ocorreu um erro ao conectar com o Google.')
+    },
   })
 
   const handleEmailSubmit = (e: React.FormEvent) => {

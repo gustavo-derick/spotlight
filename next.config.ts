@@ -13,7 +13,7 @@ const supabaseHost = supabaseUrl ? new URL(supabaseUrl).hostname : '*.supabase.c
  */
 const cspDirectives = [
   "default-src 'self'",
-  isDev ? "script-src 'self' 'unsafe-eval' 'unsafe-inline'" : "script-src 'self'",
+  isDev ? "script-src 'self' 'unsafe-eval' 'unsafe-inline'" : "script-src 'self' 'unsafe-inline'",
   "style-src 'self' 'unsafe-inline'",
   [
     'img-src',

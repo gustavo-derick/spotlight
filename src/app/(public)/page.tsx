@@ -34,9 +34,6 @@ export default async function HomePage() {
   const baseSelect =
     'id, title_pt, title_original, poster_url, release_date, movie_ratings(source, score)'
 
-  // TMDB ID do filme pinado como hero: A Cantiga dos Pássaros e das Serpentes
-  const PINNED_HERO_TMDB_ID = 695721
-
   // Executar buscas em paralelo para performance
   const [
     pinnedHeroResult,
@@ -49,12 +46,12 @@ export default async function HomePage() {
     { data: comedyMoviesResult },
     { data: romanceMoviesResult },
   ] = await Promise.all([
-    // Filme pinado como hero
+    // Filme pinado como hero: Jogos Vorazes — Amanhecer na Colheira
     supabase
       .from('movies')
       .select('id, tmdb_id, title_pt, title_original, overview_pt, backdrop_url, release_date')
-      .eq('tmdb_id', PINNED_HERO_TMDB_ID)
-      .not('backdrop_url', 'is', null)
+      .or('title_pt.ilike.%Amanhecer na Colheira%,title_original.ilike.%Sunrise on the Reaping%')
+      .limit(1)
       .maybeSingle(),
 
     // Hero fallback: filme mais recente com backdrop

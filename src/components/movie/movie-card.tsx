@@ -1,6 +1,9 @@
+'use client'
+
 import Image from 'next/image'
 import Link from 'next/link'
 import { Clapperboard } from 'lucide-react'
+import { useState, useEffect } from 'react'
 import type { Movie } from '@/types/database'
 
 interface MovieCardProps {
@@ -13,13 +16,16 @@ interface MovieCardProps {
 export function MovieCard({ movie, priority = false }: MovieCardProps) {
   const releaseYear = movie.release_date ? new Date(movie.release_date).getFullYear() : null
 
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const isComingSoon = movie.release_date
-    ? new Date(movie.release_date + 'T00:00:00') > today
-    : false
+  // Inicia como false para que servidor e cliente concordem na hidratação.
+  // useEffect atualiza para o valor correto apenas no cliente, sem mismatch.
+  const [isComingSoon, setIsComingSoon] = useState(false)
 
-  // Função auxiliar para formatar a nota dependendo da fonte
+  useEffect(() => {
+    if (!movie.release_date) return
+    const todayStr = new Date().toISOString().slice(0, 10) // YYYY-MM-DD em UTC
+    setIsComingSoon(movie.release_date > todayStr)
+  }, [movie.release_date])
+
   const getRatingBadge = (rating: { source: string; score: number }) => {
     switch (rating.source) {
       case 'imdb':
@@ -78,7 +84,6 @@ export function MovieCard({ movie, priority = false }: MovieCardProps) {
           </div>
         )}
 
-        {/* Gradient overlay on hover for better text readability if we add text inside */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/0 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
 
         {isComingSoon && (
@@ -102,7 +107,6 @@ export function MovieCard({ movie, priority = false }: MovieCardProps) {
           )}
         </div>
 
-        {/* Avaliações */}
         {movie.movie_ratings && movie.movie_ratings.length > 0 && (
           <div className="mt-0.5 flex flex-wrap gap-1">
             {movie.movie_ratings.map(getRatingBadge)}

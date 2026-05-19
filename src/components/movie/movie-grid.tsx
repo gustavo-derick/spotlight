@@ -32,6 +32,7 @@ export function MovieGrid({ movies }: { movies: GridMovie[] }) {
       {hasMore && (
         <div className="flex justify-center pb-4">
           <Button
+            type="button"
             variant="outline"
             onClick={() => setVisible((v) => v + PAGE_SIZE)}
             className="border-zinc-700 px-10 text-zinc-300 hover:bg-zinc-800 hover:text-white"

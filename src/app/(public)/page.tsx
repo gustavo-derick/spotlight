@@ -34,8 +34,12 @@ export default async function HomePage() {
   const baseSelect =
     'id, title_pt, title_original, poster_url, release_date, movie_ratings(source, score)'
 
+  // TMDB ID do filme pinado como hero: A Cantiga dos Pássaros e das Serpentes
+  const PINNED_HERO_TMDB_ID = 695721
+
   // Executar buscas em paralelo para performance
   const [
+    pinnedHeroResult,
     { data: heroMovieResult },
     { data: latestMoviesResult },
     { data: popularMoviesResult },
@@ -45,7 +49,15 @@ export default async function HomePage() {
     { data: comedyMoviesResult },
     { data: romanceMoviesResult },
   ] = await Promise.all([
-    // Hero
+    // Filme pinado como hero
+    supabase
+      .from('movies')
+      .select('id, tmdb_id, title_pt, title_original, overview_pt, backdrop_url, release_date')
+      .eq('tmdb_id', PINNED_HERO_TMDB_ID)
+      .not('backdrop_url', 'is', null)
+      .maybeSingle(),
+
+    // Hero fallback: filme mais recente com backdrop
     supabase
       .from('movies')
       .select('id, tmdb_id, title_pt, title_original, overview_pt, backdrop_url, release_date')
@@ -106,7 +118,16 @@ export default async function HomePage() {
       .limit(15),
   ])
 
-  const heroMovie = heroMovieResult as any
+  const heroMovie = (pinnedHeroResult.data ?? heroMovieResult) as any
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const heroReleaseDate = heroMovie?.release_date
+    ? new Date(heroMovie.release_date + 'T00:00:00')
+    : null
+  // "Em breve" se for o filme pinado OU se a data de lançamento ainda não chegou
+  const isHeroComingSoon =
+    Boolean(pinnedHeroResult.data) || (heroReleaseDate ? heroReleaseDate > today : false)
 
   return (
     <div className="flex min-h-screen flex-col pb-16">
@@ -134,6 +155,13 @@ export default async function HomePage() {
 
         <div className="relative z-20 container mx-auto px-4 pb-12 md:px-8 md:pb-24">
           <div className="max-w-2xl space-y-4">
+            {isHeroComingSoon && (
+              <div>
+                <span className="inline-flex items-center rounded-full bg-rose-600 px-4 py-1.5 text-xs font-bold tracking-widest text-white uppercase shadow-lg">
+                  Em breve
+                </span>
+              </div>
+            )}
             <h1 className="text-4xl font-bold tracking-tighter text-white drop-shadow-md md:text-6xl">
               {heroMovie?.title_pt || heroMovie?.title_original || 'Bem-vindo ao Spotlight'}
             </h1>

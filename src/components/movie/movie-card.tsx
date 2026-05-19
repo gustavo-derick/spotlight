@@ -13,6 +13,12 @@ interface MovieCardProps {
 export function MovieCard({ movie, priority = false }: MovieCardProps) {
   const releaseYear = movie.release_date ? new Date(movie.release_date).getFullYear() : null
 
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const isComingSoon = movie.release_date
+    ? new Date(movie.release_date + 'T00:00:00') > today
+    : false
+
   // Função auxiliar para formatar a nota dependendo da fonte
   const getRatingBadge = (rating: { source: string; score: number }) => {
     switch (rating.source) {
@@ -74,6 +80,14 @@ export function MovieCard({ movie, priority = false }: MovieCardProps) {
 
         {/* Gradient overlay on hover for better text readability if we add text inside */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/0 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+
+        {isComingSoon && (
+          <div className="absolute top-2 left-2 z-10">
+            <span className="rounded-full bg-rose-600 px-2 py-0.5 text-[10px] font-bold tracking-wide text-white uppercase shadow-md">
+              Em breve
+            </span>
+          </div>
+        )}
       </div>
 
       <div className="flex flex-col gap-1 px-1">
@@ -81,7 +95,11 @@ export function MovieCard({ movie, priority = false }: MovieCardProps) {
           {movie.title_pt || movie.title_original}
         </h3>
         <div className="flex items-center justify-between">
-          {releaseYear && <span className="text-xs font-medium text-zinc-500">{releaseYear}</span>}
+          {isComingSoon ? (
+            <span className="text-xs font-semibold text-rose-400">Em breve</span>
+          ) : (
+            releaseYear && <span className="text-xs font-medium text-zinc-500">{releaseYear}</span>
+          )}
         </div>
 
         {/* Avaliações */}
